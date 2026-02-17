@@ -1,127 +1,296 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Aviator – Criar Conta</title>
-
-  <style>
-    * {
-      box-sizing: border-box;
-      font-family: Arial, Helvetica, sans-serif;
-    }
-
-    body {
-      margin: 0;
-      background: #120016;
-      display: flex;
-      justify-content: center;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 420px;
-      padding: 16px;
-    }
-
-    /* TÍTULO NO TOPO */
-    .title {
-      text-align: center;
-      color: #ff8a00;
-      font-size: 28px;
-      font-weight: bold;
-      margin-bottom: 20px;
-      text-shadow: 1px 1px 5px #ff005c;
-    }
-
-    /* BOTÕES */
-    .btn {
-      width: 100%;
-      padding: 16px;
-      margin: 12px 0;
-      border: none;
-      border-radius: 12px;
-      font-size: 18px;
-      font-weight: bold;
-      color: #fff;
-      background: linear-gradient(90deg, #ff8a00, #ff005c);
-      cursor: pointer;
-      animation: heartbeat 1.8s ease-in-out infinite;
-      transition: transform 0.2s;
-    }
-
-    /* SEGUNDO BOTÃO BATE EM TEMPO DIFERENTE */
-    .btn:nth-of-type(2) {
-      animation-delay: 0.9s;
-    }
-
-    /* PAUSA AO TOCAR OU PASSAR O MOUSE */
-    .btn:hover,
-    .btn:active {
-      animation-play-state: paused;
-      transform: scale(1.02);
-    }
-
-    @keyframes heartbeat {
-      0%   { transform: scale(1); }
-      15%  { transform: scale(1.05); }
-      30%  { transform: scale(1); }
-      45%  { transform: scale(1.04); }
-      60%  { transform: scale(1); }
-      100% { transform: scale(1); }
-    }
-
-    /* CARD COM BORDA */
-    .card {
-      background: linear-gradient(180deg, #3a001f, #120016);
-      border-radius: 16px;
-      padding: 0;
-      margin: 12px 0;
-      cursor: pointer;
-      border: 3px solid #ff005c; /* Borda visível */
-    }
-
-    .promo-img {
-      width: 100%;
-      border-radius: 12px;
-      display: block;
-      border: none;
-    }
-
-    .footer-text {
-      text-align: center;
-      color: #ccc;
-      font-size: 13px;
-      margin-top: 10px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Roleta da Sorte - Gire e Ganhe Prêmios">
+    <title>Roleta da Sorte</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #000;
+        }
+        
+        .intro {
+            background-color: #000;
+            padding: 20px;
+            text-align: center;
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        .main-section {
+            padding: 30px 20px;
+            text-align: center;
+            background-color: #fff;
+        }
+        
+        .main-section h2 {
+            color: #000;
+            margin-bottom: 10px;
+        }
+        
+        .main-section p {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .wheel-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto;
+        }
+        
+        #roleta {
+            width: 100%;
+            height: 100%;
+            display: block;
+            border-radius: 50%;
+        }
+        
+        .arrow {
+            position: absolute;
+            top: 50%;
+            right: -20px;
+            transform: translateY(-50%) rotate(180deg);
+            width: 0;
+            height: 0;
+            border-top: 15px solid transparent;
+            border-bottom: 15px solid transparent;
+            border-left: 30px solid red;
+        }
+        
+        #girarBtn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: orange;
+            border: none;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        #girarBtn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        #popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            text-align: center;
+            z-index: 9999;
+        }
+        
+        .popup-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 300px;
+        }
+        
+        .popup-content h3 {
+            margin-bottom: 15px;
+        }
+        
+        #popupText {
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        
+        #popupButton {
+            background: orange;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        footer {
+            background-color: #000;
+            color: #fff;
+            padding: 30px 20px;
+            text-align: center;
+            font-size: 12px;
+        }
+        
+        footer p {
+            margin: 5px 0;
+        }
+    </style>
 </head>
 
 <body>
-  <div class="container">
+    
+    <!-- SEÇÃO 1: TEXTO DE INTRODUÇÃO -->
+    <section class="intro">
+        <p>Tens 1 tentativa grátis para girar a roleta. Não custa nada, clique no botão girar!</p>
+    </section>
 
-    <!-- TÍTULO -->
-    <div class="title">Aviator Game</div>
+    <!-- SEÇÃO 2: ROLETA INTERATIVA -->
+    <section class="main-section">
+        <h2>🎯 Tente a sua sorte! 🎯</h2>
+        <p>Clique no botão e gire a roleta para ganhar prêmios!</p>
 
-    <!-- Botão Criar Conta -->
-    <button class="btn" onclick="window.open('https://media1.placard.co.mz/redirect.aspx?pid=3153&bid=1690', '_blank')">Criar conta</button>
+        <div class="wheel-container">
+            <img src="https://imgur.com/cQc9WWa.png" alt="Roleta" id="roleta">
+            <div class="arrow"></div>
+        </div>
 
-    <!-- Imagem promocional -->
-    <div class="card" onclick="window.open('https://media1.placard.co.mz/redirect.aspx?pid=3153&bid=1690', '_blank')">
-      <img 
-        src="https://olabet-register-page.lovable.app/assets/aviator-game-STeGUZC2.jpg" 
-        alt="Imagem promocional" 
-        class="promo-img"
-      />
+        <button id="girarBtn" onclick="girarRoleta()">🎪 GIRAR</button>
+    </section>
+
+    <!-- POPUP DE RESULTADO -->
+    <div id="popup">
+        <div class="popup-content">
+            <h3>🎉 Resultado 🎉</h3>
+            <p id="popupText"></p>
+            <a id="popupButton" href="https://www.megagamelive.com/affiliates/?btag=2192686" target="_blank" style="display:none;">
+                💰 REGISTRE-SE AGORA!
+            </a>
+        </div>
     </div>
 
-    <!-- Segundo Botão Criar Conta -->
-    <button class="btn" onclick="window.open('https://media1.placard.co.mz/redirect.aspx?pid=3153&bid=1690', '_blank')">Criar conta</button>
+    <!-- ÁUDIOS -->
+    <audio id="roletaSom" preload="none">
+        <source src="https://raw.githubusercontent.com/FUTURE098/audio-roleta/main/Roleta.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="victorySom" preload="none">
+        <source src="https://raw.githubusercontent.com/FUTURE098/audio-roleta/main/Celebration.mp3" type="audio/mpeg">
+    </audio>
 
-    <div class="footer-text">
-      Clique no botão para se registar e começar
-    </div>
+    <!-- RODAPÉ -->
+    <footer>
+        <p><strong>Termos de Uso e Direitos Reservados</strong></p>
+        <p><em>© 2025 apostasdemoz.site – Todos os direitos reservados.</em></p>
+    </footer>
 
-  </div>
+    <!-- BIBLIOTECA DE CONFETES -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js" defer></script>
+
+    <!-- SCRIPT PRINCIPAL DA ROLETA -->
+    <script>
+        let tentativas = 0;
+
+        function girarRoleta() {
+            const roleta = document.getElementById('roleta');
+            const som = document.getElementById('roletaSom');
+            
+            tentativas++;
+
+            // Única tentativa: ganha 5.000 MT
+            const anguloFinal = 320 + 24 * 360;
+            const tempoGiro = 8;
+
+            // Inicia o som da roleta
+            som.currentTime = 0;
+            som.volume = 1;
+            som.play().catch(() => {}); // Ignora erros de autoplay
+
+            // Aplica a animação de rotação
+            roleta.style.transition = `transform ${tempoGiro}s cubic-bezier(0.1, 0.8, 0.3, 1)`;
+            roleta.style.transform = `rotate(${anguloFinal}deg)`;
+
+            // Desabilita o botão durante o giro
+            document.getElementById('girarBtn').disabled = true;
+
+            // Sistema de fade-out do volume do áudio
+            let steps = 40;
+            let delay = (tempoGiro * 1000) / steps;
+            let stepCount = 0;
+
+            const volumeFade = setInterval(() => {
+                if (stepCount >= steps) {
+                    clearInterval(volumeFade);
+                } else {
+                    som.volume = Math.max(0, 1 - stepCount / steps);
+                    stepCount++;
+                }
+            }, delay);
+
+            // Após o término do giro, para o som e mostra o popup
+            setTimeout(() => {
+                som.pause();
+                setTimeout(showPopUp, 500);
+            }, tempoGiro * 1000);
+        }
+
+        function showPopUp() {
+            const botaoRegistro = document.getElementById('popupButton');
+
+            const texto = `
+                🤑 Parabéns! Você ganhou <b>5.000 Meticais!</b><br><br>
+                Para receber, registre-se na plataforma clicando no botão abaixo e 
+                <b>deposite 20 ou 50 Meticais</b> para que possamos confirmar seu número 
+                e enviar o valor.<br><br>
+                ⚠️ <b>O prêmio só será entregue para quem criar uma nova conta na plataforma.</b><br>
+                Se já possui uma conta, é necessário criar uma nova para receber o valor 
+                na sua carteira móvel!
+            `;
+            
+            botaoRegistro.style.display = "inline-block";
+
+            // Toca som de vitória
+            const victory = document.getElementById('victorySom');
+            victory.currentTime = 0;
+            victory.play().catch(() => {});
+
+            // Inicia animação de confetes
+            if (typeof confetti !== 'undefined') {
+                startConfetti();
+            }
+
+            // Atualiza o texto do popup e o exibe
+            document.getElementById('popupText').innerHTML = texto;
+            document.getElementById('popup').style.display = 'block';
+        }
+
+        function startConfetti() {
+            const duration = 3 * 1000;
+            const end = Date.now() + duration;
+            
+            (function frame() {
+                confetti({ 
+                    particleCount: 5, 
+                    angle: 60, 
+                    spread: 55, 
+                    origin: { x: 0 } 
+                });
+                
+                confetti({ 
+                    particleCount: 5, 
+                    angle: 120, 
+                    spread: 55, 
+                    origin: { x: 1 } 
+                });
+                
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            })();
+        }
+    </script>
+
 </body>
 </html>
