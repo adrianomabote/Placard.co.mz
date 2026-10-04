@@ -201,6 +201,30 @@
         background: #f0f3f3;
       }
 
+      .secondary-button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+
+      .secondary-button:disabled:hover {
+        background: #f8f9f9;
+        transform: none;
+      }
+
+      .login-error {
+        margin: 10px 5px 0;
+        color: #b4232d;
+        font-size: 14px;
+        line-height: 20px;
+      }
+
+      .payment-note {
+        margin: 8px 0 0;
+        color: #778286;
+        font-size: 13px;
+        line-height: 18px;
+      }
+
       :focus-visible {
         outline: 3px solid #849fa5;
         outline-offset: 3px;
@@ -269,22 +293,55 @@
             type="text"
             placeholder="tu@email.com ou 84xxxxxxx"
             autocomplete="username"
+            aria-describedby="login-error"
             required
           />
+          <p class="login-error" id="login-error" role="alert" hidden></p>
           <button class="primary-button" type="submit">Entrar</button>
         </form>
 
         <hr class="divider" />
         <p class="payment-prompt">Ainda não pagaste?</p>
-        <a class="secondary-button" href="payment.html">
+        <button class="secondary-button" type="button" disabled aria-disabled="true">
           Ver como pagar
-        </a>
+        </button>
+        <p class="payment-note">Este botão está temporariamente desativado.</p>
       </section>
     </main>
 
     <script>
-      document.querySelector("#login-form").addEventListener("submit", (event) => {
+      const loginForm = document.querySelector("#login-form");
+      const memberInput = document.querySelector("#member-id");
+      const loginError = document.querySelector("#login-error");
+      const phonePattern = /^(?:82|83|84|85|86|87|88)\d{7}$/;
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      memberInput.addEventListener("input", () => {
+        loginError.hidden = true;
+        loginError.textContent = "";
+        memberInput.removeAttribute("aria-invalid");
+      });
+
+      loginForm.addEventListener("submit", (event) => {
         event.preventDefault();
+        const identifier = memberInput.value.trim();
+        const isPhone = phonePattern.test(identifier);
+        const isEmail = emailPattern.test(identifier);
+
+        if (!isPhone && !isEmail) {
+          loginError.textContent =
+            "Indica um e-mail válido ou um número de 9 dígitos começando por 82, 83, 84, 85, 86, 87 ou 88.";
+          loginError.hidden = false;
+          memberInput.setAttribute("aria-invalid", "true");
+          memberInput.focus();
+          return;
+        }
+
+        try {
+          sessionStorage.setItem("memberContact", identifier);
+        } catch {
+          // The payment page still allows the contact details to be entered manually.
+        }
         window.location.assign("payment.html");
       });
     </script>

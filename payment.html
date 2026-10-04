@@ -363,6 +363,11 @@
         font-weight: 600;
       }
 
+      .status-message--error {
+        color: #b4232d;
+        font-weight: 600;
+      }
+
       .status-message--confirmed {
         color: #14734a;
         font-weight: 600;
@@ -398,13 +403,58 @@
       }
 
       .already-paid {
-        margin: 55px 0 30px;
+        display: block;
+        margin: 55px auto 30px;
+        padding: 8px 12px;
+        border: 0;
+        background: transparent;
         color: #1c1e1f;
+        cursor: pointer;
         font-size: 16px;
         font-weight: 600;
         line-height: 22px;
         text-align: center;
-        text-decoration: none;
+      }
+
+      .already-paid:hover {
+        text-decoration: underline;
+      }
+
+      .retry-button[hidden] {
+        display: none;
+      }
+
+      .status-check-dialog {
+        width: min(440px, calc(100% - 32px));
+        padding: 24px;
+        border: 1px solid #dfe4e4;
+        border-radius: 22px;
+        background: #fff;
+        color: #17191a;
+        box-shadow: 0 20px 70px rgb(15 30 35 / 24%);
+      }
+
+      .status-check-dialog::backdrop {
+        background: rgb(16 25 28 / 48%);
+      }
+
+      .status-check-dialog h2 {
+        margin: 0 0 8px;
+        font-size: 21px;
+      }
+
+      .status-check-dialog p {
+        line-height: 1.45;
+      }
+
+      .dialog-close {
+        min-height: 42px;
+        padding: 0 14px;
+        border: 1px solid #d6dddf;
+        border-radius: 12px;
+        background: #f7f8f8;
+        color: #25292a;
+        cursor: pointer;
       }
 
       :focus-visible {
@@ -513,6 +563,17 @@
             </select>
           </div>
 
+          <label for="member-email" class="visually-hidden">E-mail (opcional)</label>
+          <input
+            class="member-phone"
+            id="member-email"
+            name="email"
+            type="email"
+            inputmode="email"
+            autocomplete="email"
+            placeholder="O teu e-mail (opcional)"
+          />
+
           <label for="member-phone" class="visually-hidden">O teu número de telefone</label>
           <input
             class="member-phone"
@@ -522,7 +583,7 @@
             inputmode="numeric"
             autocomplete="tel"
             placeholder="O teu número (ex.: 84xxxxxxx)"
-            pattern="8[0-9]{8}"
+            pattern="(82|83|84|85|86|87|88)[0-9]{7}"
             maxlength="9"
             required
           />
@@ -544,25 +605,52 @@
             <span class="upload-help" id="upload-help">JPG, PNG ou WebP · até 10 MB</span>
           </label>
 
-          <button class="submit-button" id="submit-button" type="submit" disabled>
+          <button class="submit-button" id="submit-button" type="submit">
             Enviar comprovativo
           </button>
           <p class="status-message" id="status-message" role="status" aria-live="polite"></p>
+          <button class="submit-button retry-button" id="retry-button" type="button" hidden>
+            Tentar novamente
+          </button>
           <a class="status-link" id="status-link" href="#" hidden>
             Acompanhar estado do comprovativo
           </a>
         </form>
       </section>
 
-      <a class="already-paid" href="index.html">Já pagaste?</a>
+      <button class="already-paid" id="check-payment-button" type="button">Já pagaste?</button>
+
+      <dialog class="status-check-dialog" id="status-check-dialog" aria-labelledby="status-dialog-title">
+        <h2 id="status-dialog-title">Estado do pagamento</h2>
+        <p>Indica o mesmo telefone ou e-mail usado no comprovativo.</p>
+        <form id="status-check-form" novalidate>
+          <label for="status-identifier" class="visually-hidden">Telefone ou e-mail</label>
+          <input
+            class="member-phone"
+            id="status-identifier"
+            name="identifier"
+            type="text"
+            autocomplete="email"
+            placeholder="Telefone ou e-mail"
+            required
+          />
+          <button class="submit-button" id="status-check-submit" type="submit">
+            Verificar estado
+          </button>
+        </form>
+        <p class="status-message" id="payment-status-message" role="status" aria-live="polite"></p>
+        <button class="dialog-close" id="close-status-dialog" type="button">Fechar</button>
+      </dialog>
     </main>
 
     <script>
       const tabs = [...document.querySelectorAll(".payment-tab")];
       const receiverCard = document.querySelector("#receiver-card");
       const phoneInput = document.querySelector("#member-phone");
+      const emailInput = document.querySelector("#member-email");
       const receiptInput = document.querySelector("#receipt");
       const submitButton = document.querySelector("#submit-button");
+      const retryButton = document.querySelector("#retry-button");
       const uploadTitle = document.querySelector("#upload-title");
       const uploadHelp = document.querySelector("#upload-help");
       const statusMessage = document.querySelector("#status-message");
@@ -572,10 +660,19 @@
       const receiverNumber = document.querySelector("#receiver-number");
       const receiverName = document.querySelector("#receiver-name");
       const providerInstructions = document.querySelector("#provider-instructions");
+      const statusDialog = document.querySelector("#status-check-dialog");
+      const checkPaymentButton = document.querySelector("#check-payment-button");
+      const statusCheckForm = document.querySelector("#status-check-form");
+      const statusIdentifier = document.querySelector("#status-identifier");
+      const paymentStatusMessage = document.querySelector("#payment-status-message");
+      const statusCheckSubmit = document.querySelector("#status-check-submit");
       const maxFileBytes = 10 * 1024 * 1024;
+      const phonePattern = /^(?:82|83|84|85|86|87|88)\d{7}$/;
+      const emailPattern = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]{2,})+$/;
       let activeProvider = "M-Pesa";
       let isChecking = false;
       let submissionComplete = false;
+      let receiptId = null;
 
       function showStatus(message, state) {
         statusMessage.className = `status-message status-message--${state}`;
@@ -587,6 +684,7 @@
         statusMessage.textContent = "";
         statusMessage.className = "status-message";
         statusLink.hidden = true;
+        retryButton.hidden = true;
       }
 
       function statusUrl(receiptId) {
@@ -595,29 +693,106 @@
         return url.toString();
       }
 
-      async function pollReceiptStatus(receiptId, attempt = 0) {
+      function paymentStatusClass(status) {
+        if (status === "confirmed") return "confirmed";
+        if (status === "not_found") return "not-found";
+        return "pending";
+      }
+
+      async function checkReceiptStatus(id) {
         try {
           const response = await fetch(
-            `/api/receipts/${encodeURIComponent(receiptId)}/status`,
+            `/api/receipts/${encodeURIComponent(id)}/status`,
             {cache: "no-store"},
           );
-          if (!response.ok) return;
           const result = await response.json();
-          const reference = ` Referência: ${receiptId.slice(0, 8).toUpperCase()}.`;
-          const state =
-            result.status === "confirmed"
-              ? "confirmed"
-              : result.status === "not_found"
-                ? "not-found"
-                : "pending";
-          showStatus(`${result.message}${reference}`, state);
-
-          if (result.status === "pending" && attempt < 36) {
-            window.setTimeout(() => pollReceiptStatus(receiptId, attempt + 1), 5000);
+          if (!response.ok) {
+            throw new Error(result.error || "Não foi possível consultar o comprovativo.");
           }
-        } catch {
-          // The saved reference remains available so the user can check again later.
+
+          if (result.status === "pending") {
+            showStatus("A verificar o comprovativo. Pagamento em análise.", "pending");
+            return;
+          }
+
+          showStatus(result.message, paymentStatusClass(result.status));
+        } catch (error) {
+          showStatus(
+            error instanceof Error
+              ? `${error.message} O comprovativo continua guardado. Tenta novamente.`
+              : "Não foi possível consultar o comprovativo. Tenta novamente.",
+            "error",
+          );
         }
+      }
+
+      async function checkPaymentByContact(identifier) {
+        const response = await fetch("/api/payment-status", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({identifier}),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || "Não foi possível consultar o estado.");
+        }
+        return result;
+      }
+
+      function validatePaymentForm() {
+        const phone = phoneInput.value.trim();
+        const email = emailInput.value.trim();
+        const file = receiptInput.files[0];
+
+        if (!phonePattern.test(phone)) {
+          return {
+            message:
+              "Número inválido. Usa 9 dígitos começando por 82, 83, 84, 85, 86, 87 ou 88.",
+            field: phoneInput,
+          };
+        }
+        if (email && !emailPattern.test(email)) {
+          return {
+            message: "E-mail inválido. Confirma o formato, por exemplo nome@dominio.com.",
+            field: emailInput,
+          };
+        }
+        if (!productInput.value) {
+          return {message: "Escolhe o produto que pagaste.", field: productInput};
+        }
+        if (!file) {
+          return {message: "Anexa o comprovativo do pagamento.", field: receiptInput};
+        }
+        const validMime = ["image/jpeg", "image/png", "image/webp"].includes(file.type);
+        const validExtension = /\.(jpe?g|png|webp)$/i.test(file.name);
+        if ((!validMime && !validExtension) || file.size > maxFileBytes) {
+          return {
+            message: "Escolhe uma imagem JPG, PNG ou WebP com até 10 MB.",
+            field: receiptInput,
+          };
+        }
+        return null;
+      }
+
+      function setFormLocked(locked) {
+        phoneInput.disabled = locked;
+        emailInput.disabled = locked;
+        productInput.disabled = locked;
+        receiptInput.disabled = locked;
+        tabs.forEach((tab) => {
+          tab.disabled = locked;
+        });
+      }
+
+      async function retryReceiptAction() {
+        if (!receiptId) {
+          paymentForm.requestSubmit();
+          return;
+        }
+        retryButton.disabled = true;
+        showStatus("A consultar novamente o comprovativo...", "checking");
+        await checkReceiptStatus(receiptId);
+        retryButton.disabled = false;
       }
 
       tabs.forEach((tab) => {
@@ -644,18 +819,12 @@
       });
 
       function updateSubmitState() {
-        const validPhone = /^8\d{8}$/.test(phoneInput.value.trim());
-        const validReceipt = receiptInput.files.length === 1;
-        const validProduct = Boolean(productInput.value);
-        submitButton.disabled =
-          !(validPhone && validReceipt && validProduct && !isChecking && !submissionComplete);
+        submitButton.disabled = isChecking || submissionComplete;
       }
 
-      phoneInput.addEventListener("input", () => {
-        clearStatus();
-        updateSubmitState();
+      [phoneInput, emailInput].forEach((input) => {
+        input.addEventListener("input", clearStatus);
       });
-
       productInput.addEventListener("change", clearStatus);
 
       receiptInput.addEventListener("change", () => {
@@ -665,35 +834,46 @@
         if (!file) {
           uploadTitle.textContent = "Enviar print do pagamento";
           uploadHelp.textContent = "JPG, PNG ou WebP · até 10 MB";
-          updateSubmitState();
           return;
         }
 
-        const acceptedTypes = ["image/jpeg", "image/png", "image/webp"];
-        if (!acceptedTypes.includes(file.type) || file.size > maxFileBytes) {
-          statusMessage.textContent = "Escolhe uma imagem JPG, PNG ou WebP com até 10 MB.";
+        const validMime = ["image/jpeg", "image/png", "image/webp"].includes(file.type);
+        const validExtension = /\.(jpe?g|png|webp)$/i.test(file.name);
+        if ((!validMime && !validExtension) || file.size > maxFileBytes) {
+          showStatus("Escolhe uma imagem JPG, PNG ou WebP com até 10 MB.", "error");
           receiptInput.value = "";
           uploadTitle.textContent = "Enviar print do pagamento";
           uploadHelp.textContent = "JPG, PNG ou WebP · até 10 MB";
-          updateSubmitState();
           return;
         }
 
         uploadTitle.textContent = file.name;
         uploadHelp.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
-        updateSubmitState();
       });
 
       paymentForm.addEventListener("submit", async (event) => {
         event.preventDefault();
-        if (submitButton.disabled) return;
+        if (isChecking || submissionComplete) return;
 
+        const validationError = validatePaymentForm();
+        if (validationError) {
+          showStatus(validationError.message, "error");
+          validationError.field.setAttribute("aria-invalid", "true");
+          validationError.field.focus();
+          return;
+        }
+
+        [phoneInput, emailInput, productInput, receiptInput].forEach((field) =>
+          field.removeAttribute("aria-invalid"),
+        );
         isChecking = true;
+        retryButton.hidden = true;
         showStatus("A verificar o comprovativo...", "checking");
         updateSubmitState();
 
         const formData = new FormData();
         formData.append("phone", phoneInput.value.trim());
+        formData.append("email", emailInput.value.trim());
         formData.append("provider", activeProvider);
         formData.append("product", productInput.value);
         formData.append("receipt", receiptInput.files[0], receiptInput.files[0].name);
@@ -708,42 +888,98 @@
             throw new Error(result.error || "Não foi possível enviar o comprovativo.");
           }
 
+          receiptId = result.id;
           submissionComplete = true;
-          phoneInput.disabled = true;
-          productInput.disabled = true;
-          receiptInput.disabled = true;
-          tabs.forEach((tab) => {
-            tab.disabled = true;
-          });
+          setFormLocked(true);
+          submitButton.textContent = "Comprovativo enviado";
           statusLink.href = statusUrl(result.id);
           statusLink.hidden = false;
-          showStatus(
-            `${result.message} Referência: ${result.id.slice(0, 8).toUpperCase()}.`,
-            "pending",
-          );
-          pollReceiptStatus(result.id);
+          retryButton.textContent = "Tentar novamente";
+          retryButton.hidden = false;
+          showStatus("A verificar o comprovativo. Pagamento em análise.", "pending");
         } catch (error) {
-          isChecking = false;
           showStatus(
             error instanceof Error
               ? error.message
               : "Não foi possível enviar o comprovativo. Tenta novamente.",
-            "not-found",
+            "error",
           );
+          retryButton.textContent = "Tentar novamente";
+          retryButton.hidden = false;
+        } finally {
+          isChecking = false;
           updateSubmitState();
+        }
+      });
+
+      retryButton.addEventListener("click", retryReceiptAction);
+
+      checkPaymentButton.addEventListener("click", () => {
+        paymentStatusMessage.textContent = "";
+        paymentStatusMessage.className = "status-message";
+        statusIdentifier.value = "";
+        statusDialog.showModal();
+        statusIdentifier.focus();
+      });
+
+      document.querySelector("#close-status-dialog").addEventListener("click", () => {
+        statusDialog.close();
+      });
+
+      statusCheckForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const identifier = statusIdentifier.value.trim();
+        if (!phonePattern.test(identifier) && !emailPattern.test(identifier)) {
+          paymentStatusMessage.textContent =
+            "Indica um e-mail válido ou um número de 9 dígitos começando por 82, 83, 84, 85, 86, 87 ou 88.";
+          paymentStatusMessage.className = "status-message status-message--error";
+          statusIdentifier.setAttribute("aria-invalid", "true");
+          statusIdentifier.focus();
           return;
         }
 
-        isChecking = false;
-        updateSubmitState();
+        statusCheckSubmit.disabled = true;
+        paymentStatusMessage.textContent = "A consultar o estado do pagamento...";
+        paymentStatusMessage.className = "status-message status-message--checking";
+        try {
+          const result = await checkPaymentByContact(identifier);
+          paymentStatusMessage.textContent = result.message;
+          paymentStatusMessage.className =
+            `status-message status-message--${paymentStatusClass(result.status)}`;
+          statusIdentifier.removeAttribute("aria-invalid");
+        } catch (error) {
+          paymentStatusMessage.textContent =
+            error instanceof Error ? error.message : "Não foi possível consultar o estado.";
+          paymentStatusMessage.className = "status-message status-message--error";
+        } finally {
+          statusCheckSubmit.disabled = false;
+        }
       });
+
+      try {
+        const savedContact = sessionStorage.getItem("memberContact") || "";
+        if (phonePattern.test(savedContact)) {
+          phoneInput.value = savedContact;
+        } else if (emailPattern.test(savedContact)) {
+          emailInput.value = savedContact;
+        }
+        sessionStorage.removeItem("memberContact");
+      } catch {
+        // Users without sessionStorage can enter their contact details here.
+      }
 
       const existingReference = new URLSearchParams(window.location.search).get("ref");
       if (existingReference && /^[a-f0-9]{32}$/.test(existingReference)) {
+        receiptId = existingReference;
+        submissionComplete = true;
+        setFormLocked(true);
+        submitButton.disabled = true;
+        submitButton.textContent = "Comprovativo enviado";
         statusLink.href = statusUrl(existingReference);
         statusLink.hidden = false;
-        showStatus("A consultar o estado do comprovativo...", "checking");
-        pollReceiptStatus(existingReference);
+        retryButton.hidden = false;
+        showStatus("A verificar o comprovativo. Pagamento em análise.", "pending");
+        checkReceiptStatus(existingReference);
       }
     </script>
   </body>
