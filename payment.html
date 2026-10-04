@@ -522,10 +522,10 @@
             providerInstructions.textContent =
               "M-Pesa: envia para 843649395, em nome de GABRIEL TOMAS DIMANDE. Código Oculto: 997 ou 1.000 MT; combo: 5.000 MT.";
           } else {
-            receiverNumber.textContent = "Dados e-Mola não informados";
-            receiverName.textContent = "Não faças a transferência até confirmares os dados.";
+            receiverNumber.textContent = "875276144";
+            receiverName.textContent = "Nome: Graca";
             providerInstructions.textContent =
-              "Os dados de e-Mola não foram fornecidos. Seleciona M-Pesa ou confirma o número e o titular do e-Mola antes de pagar.";
+              "e-Mola: envia para 875276144, em nome de Graca. Código Oculto: 997 ou 1.000 MT; combo: 5.000 MT.";
           }
 
           updateSubmitState();
@@ -535,7 +535,7 @@
       function updateSubmitState() {
         const validPhone = /^8\d{8}$/.test(phoneInput.value.trim());
         const validReceipt = receiptInput.files.length === 1;
-        submitButton.disabled = !(validPhone && validReceipt && activeProvider === "M-Pesa" && !isChecking);
+        submitButton.disabled = !(validPhone && validReceipt && !isChecking);
       }
 
       phoneInput.addEventListener("input", () => {
