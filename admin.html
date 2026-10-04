@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f5f7f7" />
+    <title>Revisão de comprovativos — MEMBRS.</title>
+    <style>
+      :root {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #17191a;
+        background: #f5f7f7;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        padding: 40px 16px;
+      }
+
+      main {
+        width: min(100%, 760px);
+        margin: 0 auto;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(25px, 5vw, 32px);
+        letter-spacing: -0.8px;
+      }
+
+      .intro {
+        margin: 8px 0 22px;
+        color: #687477;
+        line-height: 1.5;
+      }
+
+      .panel,
+      .receipt-card {
+        padding: 20px;
+        border: 1px solid #dfe4e4;
+        border-radius: 18px;
+        background: #fff;
+        box-shadow: 0 7px 26px rgb(20 35 40 / 3%);
+      }
+
+      label {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      input {
+        width: 100%;
+        height: 48px;
+        padding: 0 13px;
+        border: 1px solid #d5dddf;
+        border-radius: 12px;
+        font: inherit;
+      }
+
+      button {
+        min-height: 42px;
+        padding: 0 14px;
+        border: 0;
+        border-radius: 11px;
+        background: #2558e8;
+        color: #fff;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 600;
+      }
+
+      button:hover {
+        background: #1949cf;
+      }
+
+      button.secondary {
+        border: 1px solid #d6dddf;
+        background: #f7f8f8;
+        color: #25292a;
+      }
+
+      button.danger {
+        background: #a92b34;
+      }
+
+      :focus-visible {
+        outline: 3px solid #7893d3;
+        outline-offset: 3px;
+      }
+
+      .login-actions,
+      .receipt-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .message {
+        min-height: 20px;
+        margin: 10px 0 0;
+        color: #687477;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .message.error {
+        color: #b4232d;
+      }
+
+      #receipt-list {
+        display: grid;
+        gap: 14px;
+        margin-top: 18px;
+      }
+
+      .receipt-card h2 {
+        margin: 0 0 12px;
+        font-size: 18px;
+      }
+
+      .receipt-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 8px 16px;
+        margin: 0;
+        color: #465356;
+        font-size: 14px;
+      }
+
+      .receipt-details div {
+        overflow-wrap: anywhere;
+      }
+
+      .receipt-details dt {
+        color: #778286;
+        font-size: 12px;
+      }
+
+      .receipt-details dd {
+        margin: 2px 0 0;
+        font-weight: 600;
+      }
+
+      .receipt-preview {
+        display: block;
+        max-width: 100%;
+        max-height: 460px;
+        margin-top: 14px;
+        border: 1px solid #e0e4e5;
+        border-radius: 12px;
+      }
+
+      .receipt-state {
+        display: inline-block;
+        margin-top: 12px;
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: #fff3d5;
+        color: #805d08;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .receipt-state.confirmed {
+        background: #e6f5ed;
+        color: #14734a;
+      }
+
+      .receipt-state.not-found {
+        background: #fff0f0;
+        color: #a92b34;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      @media (max-width: 520px) {
+        body {
+          padding-top: 24px;
+        }
+
+        .panel,
+        .receipt-card {
+          padding: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Revisão de comprovativos</h1>
+      <p class="intro">
+        Os pagamentos são revistos manualmente. Este painel não consulta automaticamente
+        M-Pesa ou e-Mola.
+      </p>
+
+      <section class="panel" id="login-panel">
+        <form id="login-form">
+          <label for="admin-password">Senha de administração</label>
+          <input
+            id="admin-password"
+            type="password"
+            autocomplete="current-password"
+            required
+          />
+          <div class="login-actions">
+            <button type="submit">Entrar</button>
+          </div>
+        </form>
+        <p class="message" id="admin-message" role="status" aria-live="polite"></p>
+      </section>
+
+      <section id="admin-content" hidden aria-live="polite">
+        <div class="login-actions">
+          <button class="secondary" id="refresh-button" type="button">Atualizar lista</button>
+          <button class="secondary" id="logout-button" type="button">Sair</button>
+        </div>
+        <p class="message" id="list-message"></p>
+        <div id="receipt-list"></div>
+      </section>
+    </main>
+
+    <script>
+      const loginPanel = document.querySelector("#login-panel");
+      const loginForm = document.querySelector("#login-form");
+      const passwordInput = document.querySelector("#admin-password");
+      const adminMessage = document.querySelector("#admin-message");
+      const adminContent = document.querySelector("#admin-content");
+      const listMessage = document.querySelector("#list-message");
+      const receiptList = document.querySelector("#receipt-list");
+      let adminPassword = "";
+
+      function requestHeaders(json = false) {
+        const headers = {Authorization: `Bearer ${adminPassword}`};
+        if (json) headers["Content-Type"] = "application/json";
+        return headers;
+      }
+
+      function statusLabel(status) {
+        if (status === "confirmed") return ["Confirmado manualmente", "confirmed"];
+        if (status === "not_found") return ["Pagamento não encontrado", "not-found"];
+        return ["Pendente de confirmação", ""];
+      }
+
+      function addDetail(parent, label, value) {
+        const wrapper = document.createElement("div");
+        const term = document.createElement("dt");
+        const detail = document.createElement("dd");
+        term.textContent = label;
+        detail.textContent = value;
+        wrapper.append(term, detail);
+        parent.append(wrapper);
+      }
+
+      async function loadReceipts() {
+        listMessage.textContent = "A carregar comprovativos...";
+        listMessage.className = "message";
+        try {
+          const response = await fetch("/api/admin/receipts", {
+            headers: requestHeaders(),
+            cache: "no-store",
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || "Não foi possível carregar a lista.");
+
+          receiptList.replaceChildren();
+          if (result.receipts.length === 0) {
+            listMessage.textContent = "Ainda não há comprovativos recebidos.";
+            return;
+          }
+
+          listMessage.textContent = `${result.receipts.length} comprovativo(s) recente(s).`;
+          for (const receipt of result.receipts) {
+            const card = document.createElement("article");
+            card.className = "receipt-card";
+
+            const heading = document.createElement("h2");
+            heading.textContent = `Referência ${receipt.id.slice(0, 8).toUpperCase()}`;
+            const details = document.createElement("dl");
+            details.className = "receipt-details";
+            addDetail(details, "Telefone", receipt.phone);
+            addDetail(details, "Método", receipt.provider);
+            addDetail(details, "Produto", receipt.product_name);
+            addDetail(details, "Valor", `${receipt.amount_mzn.toLocaleString("pt-MZ")} MT`);
+            addDetail(
+              details,
+              "Recebido",
+              new Date(receipt.received_at).toLocaleString("pt-MZ"),
+            );
+
+            const [label, stateClass] = statusLabel(receipt.status);
+            const state = document.createElement("span");
+            state.className = `receipt-state ${stateClass}`;
+            state.textContent = label;
+
+            const actions = document.createElement("div");
+            actions.className = "receipt-actions";
+            const previewButton = document.createElement("button");
+            previewButton.className = "secondary";
+            previewButton.type = "button";
+            previewButton.textContent = "Ver comprovativo";
+            previewButton.addEventListener("click", () => showReceipt(receipt, card));
+            actions.append(previewButton);
+
+            if (receipt.status === "pending") {
+              const confirmButton = document.createElement("button");
+              confirmButton.type = "button";
+              confirmButton.textContent = "Confirmar pagamento";
+              confirmButton.addEventListener("click", () =>
+                updateStatus(receipt.id, "confirmed"),
+              );
+
+              const notFoundButton = document.createElement("button");
+              notFoundButton.className = "danger";
+              notFoundButton.type = "button";
+              notFoundButton.textContent = "Marcar como não encontrado";
+              notFoundButton.addEventListener("click", () =>
+                updateStatus(receipt.id, "not_found"),
+              );
+              actions.append(confirmButton, notFoundButton);
+            }
+
+            const deleteButton = document.createElement("button");
+            deleteButton.className = "danger";
+            deleteButton.type = "button";
+            deleteButton.textContent = "Apagar comprovativo";
+            deleteButton.addEventListener("click", () => deleteReceipt(receipt.id));
+            actions.append(deleteButton);
+
+            card.append(heading, details, state, actions);
+            receiptList.append(card);
+          }
+        } catch (error) {
+          listMessage.textContent =
+            error instanceof Error ? error.message : "Não foi possível carregar a lista.";
+          listMessage.className = "message error";
+          if (error instanceof Error && error.message.includes("não autorizado")) {
+            logout();
+          }
+        }
+      }
+
+      async function showReceipt(receipt, card) {
+        const response = await fetch(
+          `/api/admin/receipts/${encodeURIComponent(receipt.id)}/file`,
+          {headers: requestHeaders(), cache: "no-store"},
+        );
+        if (!response.ok) {
+          listMessage.textContent = "Não foi possível abrir este comprovativo.";
+          listMessage.className = "message error";
+          return;
+        }
+
+        const imageUrl = URL.createObjectURL(await response.blob());
+        const image = document.createElement("img");
+        image.className = "receipt-preview";
+        image.src = imageUrl;
+        image.alt = `Comprovativo ${receipt.id.slice(0, 8).toUpperCase()}`;
+        card.querySelector(".receipt-preview")?.remove();
+        card.append(image);
+      }
+
+      async function updateStatus(receiptId, status) {
+        const response = await fetch(
+          `/api/admin/receipts/${encodeURIComponent(receiptId)}/status`,
+          {
+            method: "PATCH",
+            headers: requestHeaders(true),
+            body: JSON.stringify({status}),
+          },
+        );
+        const result = await response.json();
+        if (!response.ok) {
+          listMessage.textContent = result.error || "Não foi possível atualizar o estado.";
+          listMessage.className = "message error";
+          return;
+        }
+        await loadReceipts();
+      }
+
+      async function deleteReceipt(receiptId) {
+        if (!window.confirm("Apagar este comprovativo e o respetivo registo? Esta ação é permanente.")) {
+          return;
+        }
+        const response = await fetch(
+          `/api/admin/receipts/${encodeURIComponent(receiptId)}`,
+          {method: "DELETE", headers: requestHeaders()},
+        );
+        const result = await response.json();
+        if (!response.ok) {
+          listMessage.textContent = result.error || "Não foi possível apagar o comprovativo.";
+          listMessage.className = "message error";
+          return;
+        }
+        await loadReceipts();
+      }
+
+      function logout() {
+        adminPassword = "";
+        passwordInput.value = "";
+        loginPanel.hidden = false;
+        adminContent.hidden = true;
+        receiptList.replaceChildren();
+      }
+
+      loginForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        adminPassword = passwordInput.value;
+        const response = await fetch("/api/admin/receipts", {
+          headers: requestHeaders(),
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          const result = await response.json();
+          adminPassword = "";
+          adminMessage.textContent = result.error || "Não foi possível entrar.";
+          adminMessage.className = "message error";
+          return;
+        }
+
+        passwordInput.value = "";
+        adminMessage.textContent = "";
+        loginPanel.hidden = true;
+        adminContent.hidden = false;
+        await loadReceipts();
+      });
+
+      document.querySelector("#refresh-button").addEventListener("click", loadReceipts);
+      document.querySelector("#logout-button").addEventListener("click", logout);
+    </script>
+  </body>
+</html>

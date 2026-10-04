@@ -153,6 +153,36 @@
         line-height: 23px;
       }
 
+      .purchase-field {
+        margin-top: 18px;
+      }
+
+      .purchase-label {
+        display: block;
+        margin: 0 5px 8px;
+        color: #343a3b;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .product-select {
+        display: block;
+        width: 100%;
+        height: 54px;
+        padding: 0 15px;
+        border: 1px solid #dce1e2;
+        border-radius: 16px;
+        background: #f7f8f8;
+        color: #202526;
+        font-size: 15px;
+      }
+
+      .product-select:focus {
+        border-color: #8ea6d8;
+        outline: none;
+        box-shadow: 0 0 0 3px rgb(37 88 232 / 12%);
+      }
+
       .price-details {
         min-height: 110px;
         padding: 13px 14px;
@@ -324,9 +354,34 @@
         color: #68777a;
       }
 
+      .status-message--pending {
+        color: #805d08;
+      }
+
       .status-message--not-found {
         color: #b4232d;
         font-weight: 600;
+      }
+
+      .status-message--confirmed {
+        color: #14734a;
+        font-weight: 600;
+      }
+
+      .status-link {
+        display: block;
+        margin: 8px 2px 0;
+        color: #2558e8;
+        font-size: 14px;
+        text-decoration: none;
+      }
+
+      .status-link:hover {
+        text-decoration: underline;
+      }
+
+      .status-link[hidden] {
+        display: none;
       }
 
       .visually-hidden {
@@ -450,6 +505,14 @@
         </section>
 
         <form id="payment-form" novalidate>
+          <div class="purchase-field">
+            <label class="purchase-label" for="product">O que pagaste?</label>
+            <select class="product-select" id="product" name="product" required>
+              <option value="codigo-oculto">Código Oculto — 447 MT</option>
+              <option value="combo">Combo Código Oculto + Mentoria em grupo — 5.000 MT</option>
+            </select>
+          </div>
+
           <label for="member-phone" class="visually-hidden">O teu número de telefone</label>
           <input
             class="member-phone"
@@ -485,6 +548,9 @@
             Enviar comprovativo
           </button>
           <p class="status-message" id="status-message" role="status" aria-live="polite"></p>
+          <a class="status-link" id="status-link" href="#" hidden>
+            Acompanhar estado do comprovativo
+          </a>
         </form>
       </section>
 
@@ -501,20 +567,65 @@
       const uploadHelp = document.querySelector("#upload-help");
       const statusMessage = document.querySelector("#status-message");
       const paymentForm = document.querySelector("#payment-form");
+      const productInput = document.querySelector("#product");
+      const statusLink = document.querySelector("#status-link");
       const receiverNumber = document.querySelector("#receiver-number");
       const receiverName = document.querySelector("#receiver-name");
       const providerInstructions = document.querySelector("#provider-instructions");
       const maxFileBytes = 10 * 1024 * 1024;
       let activeProvider = "M-Pesa";
       let isChecking = false;
+      let submissionComplete = false;
+
+      function showStatus(message, state) {
+        statusMessage.className = `status-message status-message--${state}`;
+        statusMessage.textContent = message;
+      }
+
+      function clearStatus() {
+        if (submissionComplete) return;
+        statusMessage.textContent = "";
+        statusMessage.className = "status-message";
+        statusLink.hidden = true;
+      }
+
+      function statusUrl(receiptId) {
+        const url = new URL(window.location.href);
+        url.searchParams.set("ref", receiptId);
+        return url.toString();
+      }
+
+      async function pollReceiptStatus(receiptId, attempt = 0) {
+        try {
+          const response = await fetch(
+            `/api/receipts/${encodeURIComponent(receiptId)}/status`,
+            {cache: "no-store"},
+          );
+          if (!response.ok) return;
+          const result = await response.json();
+          const reference = ` Referência: ${receiptId.slice(0, 8).toUpperCase()}.`;
+          const state =
+            result.status === "confirmed"
+              ? "confirmed"
+              : result.status === "not_found"
+                ? "not-found"
+                : "pending";
+          showStatus(`${result.message}${reference}`, state);
+
+          if (result.status === "pending" && attempt < 36) {
+            window.setTimeout(() => pollReceiptStatus(receiptId, attempt + 1), 5000);
+          }
+        } catch {
+          // The saved reference remains available so the user can check again later.
+        }
+      }
 
       tabs.forEach((tab) => {
         tab.addEventListener("click", () => {
           tabs.forEach((item) => item.setAttribute("aria-selected", String(item === tab)));
           activeProvider = tab.dataset.provider;
           receiverCard.setAttribute("aria-label", `Dados de envio por ${activeProvider}`);
-          statusMessage.textContent = "";
-          statusMessage.className = "status-message";
+          clearStatus();
 
           if (activeProvider === "M-Pesa") {
             receiverNumber.textContent = "848710333";
@@ -535,17 +646,21 @@
       function updateSubmitState() {
         const validPhone = /^8\d{8}$/.test(phoneInput.value.trim());
         const validReceipt = receiptInput.files.length === 1;
-        submitButton.disabled = !(validPhone && validReceipt && !isChecking);
+        const validProduct = Boolean(productInput.value);
+        submitButton.disabled =
+          !(validPhone && validReceipt && validProduct && !isChecking && !submissionComplete);
       }
 
       phoneInput.addEventListener("input", () => {
-        statusMessage.textContent = "";
+        clearStatus();
         updateSubmitState();
       });
 
+      productInput.addEventListener("change", clearStatus);
+
       receiptInput.addEventListener("change", () => {
         const file = receiptInput.files[0];
-        statusMessage.textContent = "";
+        clearStatus();
 
         if (!file) {
           uploadTitle.textContent = "Enviar print do pagamento";
@@ -569,22 +684,67 @@
         updateSubmitState();
       });
 
-      paymentForm.addEventListener("submit", (event) => {
+      paymentForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         if (submitButton.disabled) return;
 
         isChecking = true;
-        statusMessage.className = "status-message status-message--checking";
-        statusMessage.textContent = "A verificar o comprovativo...";
+        showStatus("A verificar o comprovativo...", "checking");
         updateSubmitState();
 
-        window.setTimeout(() => {
+        const formData = new FormData();
+        formData.append("phone", phoneInput.value.trim());
+        formData.append("provider", activeProvider);
+        formData.append("product", productInput.value);
+        formData.append("receipt", receiptInput.files[0], receiptInput.files[0].name);
+
+        try {
+          const response = await fetch("/api/receipts", {
+            method: "POST",
+            body: formData,
+          });
+          const result = await response.json();
+          if (!response.ok) {
+            throw new Error(result.error || "Não foi possível enviar o comprovativo.");
+          }
+
+          submissionComplete = true;
+          phoneInput.disabled = true;
+          productInput.disabled = true;
+          receiptInput.disabled = true;
+          tabs.forEach((tab) => {
+            tab.disabled = true;
+          });
+          statusLink.href = statusUrl(result.id);
+          statusLink.hidden = false;
+          showStatus(
+            `${result.message} Referência: ${result.id.slice(0, 8).toUpperCase()}.`,
+            "pending",
+          );
+          pollReceiptStatus(result.id);
+        } catch (error) {
           isChecking = false;
-          statusMessage.className = "status-message status-message--not-found";
-          statusMessage.textContent = "Pagamento não encontrado no sistema.";
+          showStatus(
+            error instanceof Error
+              ? error.message
+              : "Não foi possível enviar o comprovativo. Tenta novamente.",
+            "not-found",
+          );
           updateSubmitState();
-        }, 1400);
+          return;
+        }
+
+        isChecking = false;
+        updateSubmitState();
       });
+
+      const existingReference = new URLSearchParams(window.location.search).get("ref");
+      if (existingReference && /^[a-f0-9]{32}$/.test(existingReference)) {
+        statusLink.href = statusUrl(existingReference);
+        statusLink.hidden = false;
+        showStatus("A consultar o estado do comprovativo...", "checking");
+        pollReceiptStatus(existingReference);
+      }
     </script>
   </body>
 </html>

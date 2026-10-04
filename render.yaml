@@ -1,6 +1,17 @@
 services:
   - type: web
     name: membrs-area-membros
-    runtime: static
-    buildCommand: "true"
-    staticPublishPath: .
+    runtime: python
+    plan: 0.5c-512mb
+    buildCommand: pip install -r requirements.txt
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT --workers 1 main:app"
+    healthCheckPath: /api/health
+    disk:
+      name: receipt-storage
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: RECEIPT_STORAGE_DIR
+        value: /var/data
+      - key: ADMIN_PASSWORD
+        sync: false
