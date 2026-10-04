@@ -284,7 +284,7 @@
         <h1 id="login-title">Entrar na área de membros</h1>
         <p class="subtitle">Usa o teu email ou número de telefone</p>
 
-        <form class="login-form" id="login-form">
+        <form class="login-form" id="login-form" novalidate>
           <label for="member-id">Email ou telefone</label>
           <input
             class="email-input"
@@ -314,7 +314,7 @@
       const memberInput = document.querySelector("#member-id");
       const loginError = document.querySelector("#login-error");
       const phonePattern = /^(?:82|83|84|85|86|87|88)\d{7}$/;
-      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const emailPattern = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]{2,})+$/;
 
       memberInput.addEventListener("input", () => {
         loginError.hidden = true;

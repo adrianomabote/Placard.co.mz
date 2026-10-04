@@ -17,7 +17,7 @@ UPLOAD_DIR = DATA_DIR / "uploads"
 DATABASE_PATH = DATA_DIR / "receipts.sqlite3"
 MAX_RECEIPT_BYTES = 10 * 1024 * 1024
 PHONE_PATTERN = re.compile(r"(?:82|83|84|85|86|87|88)\d{7}")
-EMAIL_PATTERN = re.compile(r"[^@\s]+@[^@\s.]+(?:\.[^@\s.]+)+")
+EMAIL_PATTERN = re.compile(r"[^@\s]+@[^@\s.]+(?:\.[^@\s.]{2,})+")
 
 PRODUCTS = {
     "codigo-oculto": ("Código Oculto", 447),

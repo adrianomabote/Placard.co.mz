@@ -295,6 +295,7 @@
             const details = document.createElement("dl");
             details.className = "receipt-details";
             addDetail(details, "Telefone", receipt.phone);
+            addDetail(details, "E-mail", receipt.email || "—");
             addDetail(details, "Método", receipt.provider);
             addDetail(details, "Produto", receipt.product_name);
             addDetail(details, "Valor", `${receipt.amount_mzn.toLocaleString("pt-MZ")} MT`);
