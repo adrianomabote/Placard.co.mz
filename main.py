@@ -274,7 +274,8 @@ def submit_receipt():
 
 @app.post("/api/payment-status")
 def lookup_payment_status():
-    payload = request.get_json(silent=True) or request.form
+    json_payload = request.get_json(silent=True)
+    payload = json_payload if isinstance(json_payload, dict) else request.form
     identifier = str(payload.get("identifier", "")).strip()
 
     if is_valid_phone(identifier):

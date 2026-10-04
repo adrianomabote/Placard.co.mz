@@ -685,6 +685,9 @@
         statusMessage.className = "status-message";
         statusLink.hidden = true;
         retryButton.hidden = true;
+        [phoneInput, emailInput, productInput, receiptInput].forEach((field) =>
+          field.removeAttribute("aria-invalid"),
+        );
       }
 
       function statusUrl(receiptId) {
@@ -917,7 +920,8 @@
       checkPaymentButton.addEventListener("click", () => {
         paymentStatusMessage.textContent = "";
         paymentStatusMessage.className = "status-message";
-        statusIdentifier.value = "";
+        statusIdentifier.value =
+          phoneInput.value.trim() || emailInput.value.trim();
         statusDialog.showModal();
         statusIdentifier.focus();
       });
@@ -939,6 +943,7 @@
         }
 
         statusCheckSubmit.disabled = true;
+        statusIdentifier.removeAttribute("aria-invalid");
         paymentStatusMessage.textContent = "A consultar o estado do pagamento...";
         paymentStatusMessage.className = "status-message status-message--checking";
         try {
