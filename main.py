@@ -304,9 +304,13 @@ def lookup_payment_status():
 
     status = record["status"] if record else "not_found"
     return jsonify(
-        status=status,
+        status=status if record else "no_submission",
         found=record is not None,
-        message=STATUS_MESSAGES[status],
+        message=(
+            STATUS_MESSAGES[status]
+            if record
+            else "Nenhum comprovativo enviado para este contacto."
+        ),
     )
 
 

@@ -787,15 +787,36 @@
         });
       }
 
-      async function retryReceiptAction() {
-        if (!receiptId) {
-          paymentForm.requestSubmit();
-          return;
-        }
-        retryButton.disabled = true;
-        showStatus("A consultar novamente o comprovativo...", "checking");
-        await checkReceiptStatus(receiptId);
+      function retryReceiptAction() {
+        const previousPhone = phoneInput.value.trim();
+        const previousEmail = emailInput.value.trim();
+        const previousProduct = productInput.value;
+
+        paymentForm.reset();
+        phoneInput.value = previousPhone;
+        emailInput.value = previousEmail;
+        productInput.value = previousProduct;
+
+        receiptId = null;
+        submissionComplete = false;
+        isChecking = false;
+        setFormLocked(false);
+        submitButton.textContent = "Enviar comprovativo";
         retryButton.disabled = false;
+        retryButton.hidden = true;
+        statusMessage.textContent = "";
+        statusMessage.className = "status-message";
+        statusLink.hidden = true;
+        uploadTitle.textContent = "Enviar print do pagamento";
+        uploadHelp.textContent = "JPG, PNG ou WebP · até 10 MB";
+        updateSubmitState();
+
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete("ref");
+        window.history.replaceState({}, "", cleanUrl);
+        document
+          .querySelector(".payment-instructions")
+          .scrollIntoView({behavior: "smooth", block: "start"});
       }
 
       tabs.forEach((tab) => {
@@ -948,9 +969,15 @@
         paymentStatusMessage.className = "status-message status-message--checking";
         try {
           const result = await checkPaymentByContact(identifier);
-          paymentStatusMessage.textContent = result.message;
-          paymentStatusMessage.className =
-            `status-message status-message--${paymentStatusClass(result.status)}`;
+          if (!result.found) {
+            paymentStatusMessage.textContent =
+              "Nenhum comprovativo enviado para este contacto.";
+            paymentStatusMessage.className = "status-message status-message--checking";
+          } else {
+            paymentStatusMessage.textContent = result.message;
+            paymentStatusMessage.className =
+              `status-message status-message--${paymentStatusClass(result.status)}`;
+          }
           statusIdentifier.removeAttribute("aria-invalid");
         } catch (error) {
           paymentStatusMessage.textContent =
