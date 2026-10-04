@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f5f7f7" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>Revisão de comprovativos — MEMBRS.</title>
     <style>
       :root {
@@ -209,10 +210,12 @@
 
       <section class="panel" id="login-panel">
         <form id="login-form">
+          <input type="text" name="username" value="admin" autocomplete="username" hidden />
           <label for="admin-password">Senha de administração</label>
           <input
             id="admin-password"
             type="password"
+            name="password"
             autocomplete="current-password"
             required
           />
