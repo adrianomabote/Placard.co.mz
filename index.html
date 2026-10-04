@@ -199,17 +199,6 @@
         background: #f0f3f3;
       }
 
-      .notice {
-        margin: 12px 3px 0;
-        color: #626d70;
-        font-size: 14px;
-        line-height: 1.4;
-      }
-
-      .notice:empty {
-        display: none;
-      }
-
       :focus-visible {
         outline: 3px solid #849fa5;
         outline-offset: 3px;
@@ -288,18 +277,14 @@
         <a class="secondary-button" href="payment.html">
           Ver como pagar
         </a>
-        <p class="notice" id="notice" role="status" aria-live="polite"></p>
       </section>
     </main>
 
     <script>
-      const notice = document.querySelector("#notice");
-
       document.querySelector("#login-form").addEventListener("submit", (event) => {
         event.preventDefault();
-        notice.textContent = "O acesso de membros ainda não está ligado.";
+        window.location.assign("payment.html");
       });
-
     </script>
   </body>
 </html>
