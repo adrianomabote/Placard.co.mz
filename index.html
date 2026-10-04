@@ -1,36 +1,306 @@
-<!DOCTYPE html>
-<html lang="pt">
-<head>
-    <meta charset="UTF-8">
-    <title>Iframe Site</title>
-
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="theme-color"
+      content="#f5f7f7"
+    />
+    <title>MEMBRS. — Área de membros</title>
     <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #0f172a;
-            color: white;
-            text-align: center;
+      :root {
+        color-scheme: light;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #17191a;
+        background: #f5f7f7;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-width: 320px;
+        min-height: 100%;
+        margin: 0;
+      }
+
+      body {
+        min-height: 100vh;
+        min-height: 100svh;
+        background: #f5f7f7;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      .page {
+        display: flex;
+        min-height: 100vh;
+        min-height: 100svh;
+        flex-direction: column;
+        align-items: center;
+        padding: max(72px, 18.1svh) 0 36px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        margin-bottom: 51px;
+        color: #17191a;
+        text-decoration: none;
+      }
+
+      .brand-mark {
+        display: block;
+        width: 46px;
+        height: 46px;
+        flex: 0 0 46px;
+        filter: drop-shadow(0 2px 2px rgb(0 0 0 / 20%));
+      }
+
+      .brand-name {
+        font-size: 25px;
+        font-weight: 800;
+        letter-spacing: -1.2px;
+        line-height: 1;
+      }
+
+      .login-card {
+        width: min(100%, 500px);
+        padding: 43px 27px 38px;
+        border: 1px solid #dfe4e4;
+        border-radius: 36px;
+        background: rgb(255 255 255 / 90%);
+        box-shadow: 0 8px 28px rgb(20 35 40 / 3%);
+        text-align: center;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(25px, 6.1vw, 29px);
+        font-weight: 500;
+        letter-spacing: -1.2px;
+        line-height: 1.2;
+      }
+
+      .subtitle {
+        margin: 7px 0 0;
+        color: #82898b;
+        font-size: 16px;
+        font-weight: 400;
+        line-height: 1.35;
+      }
+
+      .login-form {
+        margin-top: 36px;
+        text-align: left;
+      }
+
+      label {
+        display: block;
+        margin: 0 5px 10px;
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 20px;
+      }
+
+      .email-input {
+        display: block;
+        width: 100%;
+        height: 64px;
+        padding: 0 26px;
+        border: 1px solid transparent;
+        border-radius: 40px;
+        outline: none;
+        background: #eaf2f4;
+        color: #202526;
+        font-size: 16px;
+        transition: border-color 150ms ease, box-shadow 150ms ease;
+      }
+
+      .email-input::placeholder {
+        color: #758084;
+        opacity: 1;
+      }
+
+      .email-input:focus {
+        border-color: #a9b9bd;
+        box-shadow: 0 0 0 3px rgb(135 160 166 / 15%);
+      }
+
+      .primary-button,
+      .secondary-button {
+        display: flex;
+        width: 100%;
+        min-height: 58px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 40px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 500;
+        transition: transform 120ms ease, background-color 150ms ease;
+      }
+
+      .primary-button {
+        margin-top: 16px;
+        border: 0;
+        background: #242424;
+        box-shadow: 0 10px 20px rgb(0 0 0 / 10%);
+        color: white;
+      }
+
+      .primary-button:hover {
+        background: #111;
+      }
+
+      .primary-button:active,
+      .secondary-button:active {
+        transform: scale(0.99);
+      }
+
+      .divider {
+        height: 1px;
+        margin: 31px 0 10px;
+        border: 0;
+        background: #e2e6e6;
+      }
+
+      .payment-prompt {
+        margin: 0;
+        color: #858d8f;
+        font-size: 14px;
+        line-height: 20px;
+      }
+
+      .secondary-button {
+        min-height: 54px;
+        margin-top: 10px;
+        border: 1px solid #dce2e3;
+        border-radius: 15px;
+        background: #f8f9f9;
+        box-shadow: inset 0 0 0 1px rgb(220 226 227 / 30%);
+        color: #202223;
+      }
+
+      .secondary-button:hover {
+        background: #f0f3f3;
+      }
+
+      .notice {
+        margin: 12px 3px 0;
+        color: #626d70;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .notice:empty {
+        display: none;
+      }
+
+      :focus-visible {
+        outline: 3px solid #849fa5;
+        outline-offset: 3px;
+      }
+
+      @media (max-width: 380px) {
+        .login-card {
+          padding-right: 22px;
+          padding-left: 22px;
+          border-radius: 31px;
         }
 
-        h2 {
-            padding: 15px;
-            margin: 0;
-            background: #1e293b;
+        .brand-name {
+          font-size: 23px;
+        }
+      }
+
+      @media (max-height: 700px) {
+        .page {
+          padding-top: 56px;
         }
 
-        iframe {
-            width: 100%;
-            height: 95vh;
-            border: none;
+        .brand {
+          margin-bottom: 32px;
         }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
+    <main class="page">
+      <a class="brand" href="#" aria-label="MEMBRS.">
+        <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
+          <defs>
+            <radialGradient id="metal" cx="34%" cy="25%" r="78%">
+              <stop offset="0" stop-color="#606466" />
+              <stop offset="0.42" stop-color="#292c2e" />
+              <stop offset="0.8" stop-color="#111314" />
+              <stop offset="1" stop-color="#050606" />
+            </radialGradient>
+            <linearGradient id="edge" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stop-color="#999d9e" />
+              <stop offset="0.5" stop-color="#343738" />
+              <stop offset="1" stop-color="#070808" />
+            </linearGradient>
+          </defs>
+          <circle cx="24" cy="24" r="23" fill="url(#edge)" />
+          <circle cx="24" cy="23" r="21.1" fill="url(#metal)" />
+          <g fill="none" stroke="#f2f3f3" stroke-linecap="round" stroke-width="2.4">
+            <rect x="14" y="14" width="20" height="7" rx="1.8" />
+            <rect x="14" y="26" width="20" height="8" rx="1.8" />
+          </g>
+        </svg>
+        <span class="brand-name">MEMBRS.</span>
+      </a>
 
-    <h2>Está abaixo o iframe 👇</h2>
+      <section class="login-card" aria-labelledby="login-title">
+        <h1 id="login-title">Entrar na área de membros</h1>
+        <p class="subtitle">Usa o teu email ou número de telefone</p>
 
-    <iframe src="https://whapro.pro/?btag=RLLLIIE73T_direct"></iframe>
+        <form class="login-form" id="login-form">
+          <label for="member-id">Email ou telefone</label>
+          <input
+            class="email-input"
+            id="member-id"
+            name="member"
+            type="text"
+            placeholder="tu@email.com ou 84xxxxxxx"
+            autocomplete="username"
+            required
+          />
+          <button class="primary-button" type="submit">Entrar</button>
+        </form>
 
-</body>
+        <hr class="divider" />
+        <p class="payment-prompt">Ainda não pagaste?</p>
+        <button class="secondary-button" id="payment-button" type="button">
+          Ver como pagar
+        </button>
+        <p class="notice" id="notice" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <script>
+      const notice = document.querySelector("#notice");
+
+      document.querySelector("#login-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        notice.textContent = "O acesso de membros ainda não está ligado.";
+      });
+
+      document.querySelector("#payment-button").addEventListener("click", () => {
+        notice.textContent = "A informação de pagamento ainda não está configurada.";
+      });
+    </script>
+  </body>
 </html>
