@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f5f7f7" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>Pagamento — Código Oculto</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #17191a;
+        background: #f5f7f7;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-width: 320px;
+        min-height: 100%;
+        margin: 0;
+      }
+
+      body {
+        min-height: 100vh;
+        min-height: 100svh;
+        background: #f5f7f7;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      .page {
+        display: flex;
+        min-height: 100vh;
+        min-height: 100svh;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .heading {
+        width: 100%;
+        padding: 62px 16px 0;
+        text-align: center;
+      }
+
+      .course-name {
+        margin: 0;
+        color: #798689;
+        font-size: 17px;
+        font-weight: 400;
+        line-height: 21px;
+      }
+
+      .course-price {
+        margin: 4px 0 0;
+        color: #17191a;
+        font-size: 38px;
+        font-weight: 600;
+        letter-spacing: -1.2px;
+        line-height: 46px;
+      }
+
+      .payment-panel {
+        width: min(100%, 500px);
+        margin-top: 34px;
+        padding: 24px 11px 24px;
+        border: 1px solid #e0e4e5;
+        border-radius: 27px;
+        background: rgb(255 255 255 / 91%);
+        box-shadow: 0 7px 26px rgb(20 35 40 / 2%);
+      }
+
+      .payment-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .payment-tab {
+        min-height: 50px;
+        padding: 0 12px;
+        border: 1px solid #dce1e2;
+        border-radius: 15px;
+        background: #f7f8f8;
+        color: #778286;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 500;
+      }
+
+      .payment-tab[aria-selected="true"] {
+        border-color: #2558e8;
+        background: #2558e8;
+        color: #fff;
+      }
+
+      .receiver-card {
+        min-height: 136px;
+        margin-top: 17px;
+        padding: 19px 18px 16px;
+        border-radius: 16px;
+        background: #f7f8f8;
+      }
+
+      .receiver-label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+        color: #7c878a;
+        font-size: 16px;
+        line-height: 21px;
+      }
+
+      .phone-icon {
+        width: 16px;
+        height: 19px;
+        flex: 0 0 16px;
+        color: #68777a;
+      }
+
+      .receiver-number {
+        margin: 8px 0 0;
+        color: #25292a;
+        font-size: 23px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        line-height: 27px;
+      }
+
+      .receiver-name {
+        margin: 5px 0 0;
+        color: #778286;
+        font-size: 16px;
+        line-height: 22px;
+      }
+
+      .amount-note {
+        margin: 18px 0 21px;
+        color: #7a8588;
+        font-size: 16px;
+        line-height: 23px;
+      }
+
+      .price-details {
+        min-height: 110px;
+        padding: 13px 14px;
+        border: 1px solid #dfe3e4;
+        border-radius: 17px;
+        background: #fff;
+        color: #242728;
+        font-size: 16px;
+        line-height: 26px;
+      }
+
+      .price-details p {
+        margin: 0;
+      }
+
+      .price-details strong {
+        font-weight: 700;
+      }
+
+      .member-phone {
+        display: block;
+        width: 100%;
+        height: 54px;
+        margin-top: 20px;
+        padding: 0 15px;
+        border: 1px solid #dce1e2;
+        border-radius: 16px;
+        outline: none;
+        background: #f7f8f8;
+        color: #202526;
+        font-size: 16px;
+        transition: border-color 150ms ease, box-shadow 150ms ease;
+      }
+
+      .member-phone::placeholder {
+        color: #a0a8aa;
+        opacity: 1;
+      }
+
+      .member-phone:focus {
+        border-color: #8ea6d8;
+        box-shadow: 0 0 0 3px rgb(37 88 232 / 12%);
+      }
+
+      .upload-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        clip-path: inset(50%);
+      }
+
+      .upload-zone {
+        display: flex;
+        min-height: 160px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin-top: 18px;
+        padding: 16px;
+        border: 2px dashed #dce2e5;
+        border-radius: 18px;
+        background: #fbfcfc;
+        color: #202526;
+        cursor: pointer;
+        text-align: center;
+        transition: border-color 150ms ease, background-color 150ms ease;
+      }
+
+      .upload-zone:hover,
+      .upload-zone:focus-within {
+        border-color: #8ea6d8;
+        background: #f7f9ff;
+      }
+
+      .upload-icon {
+        width: 21px;
+        height: 21px;
+        margin-bottom: 10px;
+        color: #25292a;
+      }
+
+      .upload-title {
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 22px;
+      }
+
+      .upload-help {
+        margin-top: 8px;
+        color: #7a8588;
+        font-size: 14px;
+        line-height: 19px;
+      }
+
+      .submit-button {
+        width: 100%;
+        min-height: 60px;
+        margin-top: 18px;
+        border: 0;
+        border-radius: 16px;
+        background: #2558e8;
+        color: #fff;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 500;
+        transition: background-color 150ms ease, transform 120ms ease;
+      }
+
+      .submit-button:disabled {
+        background: #83a2e9;
+        color: #e7edfb;
+        cursor: not-allowed;
+      }
+
+      .submit-button:not(:disabled):active {
+        transform: scale(0.99);
+      }
+
+      .status-message {
+        margin: 12px 2px 0;
+        color: #68777a;
+        font-size: 14px;
+        line-height: 20px;
+      }
+
+      .status-message:empty {
+        display: none;
+      }
+
+      .already-paid {
+        margin: 55px 0 30px;
+        color: #1c1e1f;
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 22px;
+        text-align: center;
+        text-decoration: none;
+      }
+
+      :focus-visible {
+        outline: 3px solid #7893d3;
+        outline-offset: 3px;
+      }
+
+      @media (max-width: 380px) {
+        .payment-panel {
+          padding-right: 10px;
+          padding-left: 10px;
+          border-radius: 24px;
+        }
+
+        .price-details {
+          padding-right: 11px;
+          padding-left: 11px;
+          font-size: 15px;
+          line-height: 25px;
+        }
+      }
+
+      @media (max-height: 720px) {
+        .heading {
+          padding-top: 36px;
+        }
+
+        .payment-panel {
+          margin-top: 22px;
+        }
+
+        .already-paid {
+          margin-top: 28px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="heading">
+        <p class="course-name">Código Oculto</p>
+        <p class="course-price">1000 MT</p>
+      </header>
+
+      <section class="payment-panel" aria-label="Dados de pagamento">
+        <div class="payment-tabs" role="tablist" aria-label="Escolhe o método de pagamento">
+          <button
+            class="payment-tab"
+            id="tab-mpesa"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            data-provider="M-Pesa"
+          >
+            M-Pesa
+          </button>
+          <button
+            class="payment-tab"
+            id="tab-emola"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            data-provider="e-Mola"
+          >
+            e-Mola
+          </button>
+        </div>
+
+        <section class="receiver-card" id="receiver-card" aria-label="Dados de envio por M-Pesa">
+          <p class="receiver-label">
+            <svg class="phone-icon" viewBox="0 0 16 20" aria-hidden="true">
+              <rect x="3" y="1.5" width="10" height="16" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.7" />
+              <circle cx="8" cy="14.8" r=".8" fill="currentColor" />
+            </svg>
+            <span>Envia para:</span>
+          </p>
+          <p class="receiver-number">843649395</p>
+          <p class="receiver-name">Nome: GABRIEL TOMAS DIMANDE</p>
+        </section>
+
+        <p class="amount-note">O comprovativo deve corresponder ao valor deste curso.</p>
+
+        <div class="price-details">
+          <p><strong>Código Oculto:</strong> 997 ou 1.000 MT</p>
+          <p><strong>Combo Código Oculto + Mentoria em grupo:</strong> 5.000 MT</p>
+        </div>
+
+        <form id="payment-form" novalidate>
+          <label for="member-phone" class="visually-hidden">O teu número de telefone</label>
+          <input
+            class="member-phone"
+            id="member-phone"
+            name="phone"
+            type="tel"
+            inputmode="numeric"
+            autocomplete="tel"
+            placeholder="O teu número (ex.: 84xxxxxxx)"
+            pattern="8[0-9]{8}"
+            maxlength="9"
+            required
+          />
+
+          <label class="upload-zone" for="receipt">
+            <input
+              class="upload-input"
+              id="receipt"
+              name="receipt"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              aria-describedby="upload-help"
+              required
+            />
+            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M5 14v5.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span class="upload-title" id="upload-title">Enviar print do pagamento</span>
+            <span class="upload-help" id="upload-help">JPG, PNG ou WebP · até 10 MB</span>
+          </label>
+
+          <button class="submit-button" id="submit-button" type="submit" disabled>
+            Enviar comprovativo
+          </button>
+          <p class="status-message" id="status-message" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <a class="already-paid" href="index.html">Já pagaste?</a>
+    </main>
+
+    <script>
+      const tabs = [...document.querySelectorAll(".payment-tab")];
+      const receiverCard = document.querySelector("#receiver-card");
+      const phoneInput = document.querySelector("#member-phone");
+      const receiptInput = document.querySelector("#receipt");
+      const submitButton = document.querySelector("#submit-button");
+      const uploadTitle = document.querySelector("#upload-title");
+      const uploadHelp = document.querySelector("#upload-help");
+      const statusMessage = document.querySelector("#status-message");
+      const paymentForm = document.querySelector("#payment-form");
+      const maxFileBytes = 10 * 1024 * 1024;
+
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          tabs.forEach((item) => item.setAttribute("aria-selected", String(item === tab)));
+          receiverCard.setAttribute("aria-label", `Dados de envio por ${tab.dataset.provider}`);
+        });
+      });
+
+      function updateSubmitState() {
+        const validPhone = /^8\d{8}$/.test(phoneInput.value.trim());
+        const validReceipt = receiptInput.files.length === 1;
+        submitButton.disabled = !(validPhone && validReceipt);
+      }
+
+      phoneInput.addEventListener("input", () => {
+        statusMessage.textContent = "";
+        updateSubmitState();
+      });
+
+      receiptInput.addEventListener("change", () => {
+        const file = receiptInput.files[0];
+        statusMessage.textContent = "";
+
+        if (!file) {
+          uploadTitle.textContent = "Enviar print do pagamento";
+          uploadHelp.textContent = "JPG, PNG ou WebP · até 10 MB";
+          updateSubmitState();
+          return;
+        }
+
+        const acceptedTypes = ["image/jpeg", "image/png", "image/webp"];
+        if (!acceptedTypes.includes(file.type) || file.size > maxFileBytes) {
+          statusMessage.textContent = "Escolhe uma imagem JPG, PNG ou WebP com até 10 MB.";
+          receiptInput.value = "";
+          uploadTitle.textContent = "Enviar print do pagamento";
+          uploadHelp.textContent = "JPG, PNG ou WebP · até 10 MB";
+          updateSubmitState();
+          return;
+        }
+
+        uploadTitle.textContent = file.name;
+        uploadHelp.textContent = `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+        updateSubmitState();
+      });
+
+      paymentForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        statusMessage.textContent = "O envio do comprovativo ainda não está ligado.";
+      });
+    </script>
+  </body>
+</html>

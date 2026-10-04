@@ -284,9 +284,9 @@
 
         <hr class="divider" />
         <p class="payment-prompt">Ainda não pagaste?</p>
-        <button class="secondary-button" id="payment-button" type="button">
+        <a class="secondary-button" href="payment.html">
           Ver como pagar
-        </button>
+        </a>
         <p class="notice" id="notice" role="status" aria-live="polite"></p>
       </section>
     </main>
@@ -299,9 +299,6 @@
         notice.textContent = "O acesso de membros ainda não está ligado.";
       });
 
-      document.querySelector("#payment-button").addEventListener("click", () => {
-        notice.textContent = "A informação de pagamento ainda não está configurada.";
-      });
     </script>
   </body>
 </html>
