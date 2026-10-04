@@ -16,6 +16,8 @@ DATA_DIR = Path(os.environ.get("RECEIPT_STORAGE_DIR", "/tmp/membrs-receipts"))
 UPLOAD_DIR = DATA_DIR / "uploads"
 DATABASE_PATH = DATA_DIR / "receipts.sqlite3"
 MAX_RECEIPT_BYTES = 10 * 1024 * 1024
+PHONE_PATTERN = re.compile(r"(?:82|83|84|85|86|87|88)\d{7}")
+EMAIL_PATTERN = re.compile(r"[^@\s]+@[^@\s.]+(?:\.[^@\s.]+)+")
 
 PRODUCTS = {
     "codigo-oculto": ("Código Oculto", 447),
@@ -28,9 +30,9 @@ IMAGE_TYPES = {
     "webp": ("image/webp", ".webp"),
 }
 STATUS_MESSAGES = {
-    "pending": "Comprovativo recebido e guardado. Pagamento pendente de confirmação.",
+    "pending": "Pagamento em análise.",
     "confirmed": "Pagamento confirmado.",
-    "not_found": "Pagamento não encontrado no sistema.",
+    "not_found": "Nenhum pagamento detectado.",
 }
 
 app = Flask(__name__)
@@ -53,6 +55,7 @@ def initialize_storage():
             CREATE TABLE IF NOT EXISTS receipts (
                 id TEXT PRIMARY KEY,
                 phone TEXT NOT NULL,
+                email TEXT NOT NULL DEFAULT '',
                 provider TEXT NOT NULL,
                 product_key TEXT NOT NULL,
                 product_name TEXT NOT NULL,
@@ -65,6 +68,14 @@ def initialize_storage():
             )
             """
         )
+        columns = {
+            row["name"]
+            for row in connection.execute("PRAGMA table_info(receipts)").fetchall()
+        }
+        if "email" not in columns:
+            connection.execute(
+                "ALTER TABLE receipts ADD COLUMN email TEXT NOT NULL DEFAULT ''"
+            )
         connection.commit()
 
 
@@ -84,6 +95,14 @@ def identify_image(data):
 
 def valid_receipt_id(receipt_id):
     return re.fullmatch(r"[a-f0-9]{32}", receipt_id) is not None
+
+
+def is_valid_phone(value):
+    return PHONE_PATTERN.fullmatch(value) is not None
+
+
+def is_valid_email(value):
+    return EMAIL_PATTERN.fullmatch(value) is not None
 
 
 def admin_required(view):
@@ -123,7 +142,7 @@ def receipt_status_payload(record):
 def add_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
-    if request.path.startswith("/api/") or request.path == "/admin":
+    if request.path.startswith("/api/") or request.path.startswith("/admin"):
         response.headers["Cache-Control"] = "no-store"
     return response
 
@@ -145,6 +164,8 @@ def payment_page():
 
 @app.get("/admin")
 @app.get("/admin.html")
+@app.get("/admin/office")
+@app.get("/admin/office/")
 def admin_page():
     return send_from_directory(APP_DIR, "admin.html")
 
@@ -167,12 +188,23 @@ def health():
 @app.post("/api/receipts")
 def submit_receipt():
     phone = request.form.get("phone", "").strip()
+    email = request.form.get("email", "").strip().lower()
     provider = request.form.get("provider", "").strip()
     product_key = request.form.get("product", "").strip()
     upload = request.files.get("receipt")
 
-    if not re.fullmatch(r"8\d{8}", phone):
-        return jsonify(error="Indica um número de telefone válido com 9 dígitos."), 400
+    if not is_valid_phone(phone):
+        return (
+            jsonify(
+                error=(
+                    "Número inválido. Usa 9 dígitos começando por "
+                    "82, 83, 84, 85, 86, 87 ou 88."
+                )
+            ),
+            400,
+        )
+    if email and not is_valid_email(email):
+        return jsonify(error="E-mail inválido. Confirma o formato, por exemplo nome@dominio.com."), 400
     if provider not in PROVIDERS:
         return jsonify(error="Escolhe M-Pesa ou e-Mola."), 400
     if product_key not in PRODUCTS:
@@ -203,13 +235,14 @@ def submit_receipt():
             connection.execute(
                 """
                 INSERT INTO receipts (
-                    id, phone, provider, product_key, product_name,
+                    id, phone, email, provider, product_key, product_name,
                     amount_mzn, status, received_at, file_type, file_extension
-                ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)
                 """,
                 (
                     receipt_id,
                     phone,
+                    email,
                     provider,
                     product_key,
                     product_name,
@@ -239,6 +272,43 @@ def submit_receipt():
     )
 
 
+@app.post("/api/payment-status")
+def lookup_payment_status():
+    payload = request.get_json(silent=True) or request.form
+    identifier = str(payload.get("identifier", "")).strip()
+
+    if is_valid_phone(identifier):
+        column = "phone"
+        value = identifier
+    elif is_valid_email(identifier):
+        column = "email"
+        value = identifier.lower()
+    else:
+        return (
+            jsonify(
+                error=(
+                    "Indica um e-mail válido ou um número de 9 dígitos começando por "
+                    "82, 83, 84, 85, 86, 87 ou 88."
+                )
+            ),
+            400,
+        )
+
+    with closing(connect_db()) as connection:
+        record = connection.execute(
+            f"SELECT status FROM receipts WHERE {column} = ? "
+            "ORDER BY received_at DESC LIMIT 1",
+            (value,),
+        ).fetchone()
+
+    status = record["status"] if record else "not_found"
+    return jsonify(
+        status=status,
+        found=record is not None,
+        message=STATUS_MESSAGES[status],
+    )
+
+
 @app.get("/api/receipts/<receipt_id>/status")
 def public_receipt_status(receipt_id):
     record = find_receipt(receipt_id)
@@ -253,7 +323,7 @@ def admin_receipts():
     with closing(connect_db()) as connection:
         records = connection.execute(
             """
-            SELECT id, phone, provider, product_name, amount_mzn,
+            SELECT id, phone, email, provider, product_name, amount_mzn,
                    status, received_at, reviewed_at, file_type
             FROM receipts
             ORDER BY received_at DESC
