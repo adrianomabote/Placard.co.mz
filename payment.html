@@ -172,6 +172,41 @@
         font-weight: 700;
       }
 
+      .payment-instructions {
+        margin: 14px 0 0;
+        padding: 14px;
+        border-radius: 15px;
+        background: #f7f8f8;
+      }
+
+      .payment-instructions h2 {
+        margin: 0 0 8px;
+        color: #242728;
+        font-size: 15px;
+        font-weight: 600;
+        line-height: 20px;
+      }
+
+      .payment-steps {
+        margin: 0;
+        padding-left: 19px;
+        color: #687477;
+        font-size: 14px;
+        line-height: 20px;
+      }
+
+      .payment-steps li + li {
+        margin-top: 5px;
+      }
+
+      .provider-instructions {
+        margin: 10px 0 0;
+        color: #4d5b5e;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 20px;
+      }
+
       .member-phone {
         display: block;
         width: 100%;
@@ -285,6 +320,15 @@
         display: none;
       }
 
+      .status-message--checking {
+        color: #68777a;
+      }
+
+      .status-message--not-found {
+        color: #b4232d;
+        font-weight: 600;
+      }
+
       .visually-hidden {
         position: absolute;
         width: 1px;
@@ -382,8 +426,8 @@
             </svg>
             <span>Envia para:</span>
           </p>
-          <p class="receiver-number">843649395</p>
-          <p class="receiver-name">Nome: GABRIEL TOMAS DIMANDE</p>
+          <p class="receiver-number" id="receiver-number">843649395</p>
+          <p class="receiver-name" id="receiver-name">Nome: GABRIEL TOMAS DIMANDE</p>
         </section>
 
         <p class="amount-note">O comprovativo deve corresponder ao valor deste curso.</p>
@@ -392,6 +436,18 @@
           <p><strong>Código Oculto:</strong> 997 ou 1.000 MT</p>
           <p><strong>Combo Código Oculto + Mentoria em grupo:</strong> 5.000 MT</p>
         </div>
+
+        <section class="payment-instructions" aria-labelledby="instructions-title">
+          <h2 id="instructions-title">Como pagar</h2>
+          <ol class="payment-steps">
+            <li>Escolhe M-Pesa ou e-Mola.</li>
+            <li>Envia o valor indicado para o curso selecionado.</li>
+            <li>Indica o teu número, anexa o comprovativo e envia.</li>
+          </ol>
+          <p class="provider-instructions" id="provider-instructions">
+            M-Pesa: envia para 843649395, em nome de GABRIEL TOMAS DIMANDE. Código Oculto: 997 ou 1.000 MT; combo: 5.000 MT.
+          </p>
+        </section>
 
         <form id="payment-form" novalidate>
           <label for="member-phone" class="visually-hidden">O teu número de telefone</label>
@@ -445,19 +501,41 @@
       const uploadHelp = document.querySelector("#upload-help");
       const statusMessage = document.querySelector("#status-message");
       const paymentForm = document.querySelector("#payment-form");
+      const receiverNumber = document.querySelector("#receiver-number");
+      const receiverName = document.querySelector("#receiver-name");
+      const providerInstructions = document.querySelector("#provider-instructions");
       const maxFileBytes = 10 * 1024 * 1024;
+      let activeProvider = "M-Pesa";
+      let isChecking = false;
 
       tabs.forEach((tab) => {
         tab.addEventListener("click", () => {
           tabs.forEach((item) => item.setAttribute("aria-selected", String(item === tab)));
-          receiverCard.setAttribute("aria-label", `Dados de envio por ${tab.dataset.provider}`);
+          activeProvider = tab.dataset.provider;
+          receiverCard.setAttribute("aria-label", `Dados de envio por ${activeProvider}`);
+          statusMessage.textContent = "";
+          statusMessage.className = "status-message";
+
+          if (activeProvider === "M-Pesa") {
+            receiverNumber.textContent = "843649395";
+            receiverName.textContent = "Nome: GABRIEL TOMAS DIMANDE";
+            providerInstructions.textContent =
+              "M-Pesa: envia para 843649395, em nome de GABRIEL TOMAS DIMANDE. Código Oculto: 997 ou 1.000 MT; combo: 5.000 MT.";
+          } else {
+            receiverNumber.textContent = "Dados e-Mola não informados";
+            receiverName.textContent = "Não faças a transferência até confirmares os dados.";
+            providerInstructions.textContent =
+              "Os dados de e-Mola não foram fornecidos. Seleciona M-Pesa ou confirma o número e o titular do e-Mola antes de pagar.";
+          }
+
+          updateSubmitState();
         });
       });
 
       function updateSubmitState() {
         const validPhone = /^8\d{8}$/.test(phoneInput.value.trim());
         const validReceipt = receiptInput.files.length === 1;
-        submitButton.disabled = !(validPhone && validReceipt);
+        submitButton.disabled = !(validPhone && validReceipt && activeProvider === "M-Pesa" && !isChecking);
       }
 
       phoneInput.addEventListener("input", () => {
@@ -493,7 +571,19 @@
 
       paymentForm.addEventListener("submit", (event) => {
         event.preventDefault();
-        statusMessage.textContent = "O envio do comprovativo ainda não está ligado.";
+        if (submitButton.disabled) return;
+
+        isChecking = true;
+        statusMessage.className = "status-message status-message--checking";
+        statusMessage.textContent = "A verificar o comprovativo...";
+        updateSubmitState();
+
+        window.setTimeout(() => {
+          isChecking = false;
+          statusMessage.className = "status-message status-message--not-found";
+          statusMessage.textContent = "Pagamento não encontrado no sistema.";
+          updateSubmitState();
+        }, 1400);
       });
     </script>
   </body>
